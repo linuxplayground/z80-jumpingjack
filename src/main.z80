@@ -21,9 +21,7 @@ setup_game:
         call    setup
 main:
         call    menu
-        or      a
-        jp      nz,exit_game
-        call    tms_clear_screen
+game_start:
         call    draw_lines
         call    init_gaps
         call    update_lives
@@ -77,12 +75,17 @@ game_loop:
         inc     (ix+1)
         inc     (ix+2)
         inc     (ix+3)
+        inc8    gaps_right_offset
 
         dec     (ix+4)
         dec     (ix+5)
         dec     (ix+6)
         dec     (ix+7)
+        dec8    gaps_left_offset
 
+        ld      a,(attract_mode)
+        or      a
+        jr      nz,input
         call    test_fall
         or      a
         jr      z,input         ; not falling.
@@ -98,6 +101,19 @@ input:
         cp      0x1b
         jp      z,exit_game
 joy_input:
+        ; if in attract mode, only test for button input
+        ld      a,(attract_mode)
+        or      a
+        jr      z,joy_input_playing
+        xor     a
+        call    get_joy_status
+        and     joy_map_button
+        jp      z,game_loop
+        xor     a
+        ld      (attract_mode),a
+        call    tms_clear_screen
+        jp      game_start
+joy_input_playing:
         ; Don't take any input at all if Jack state is >= JUMP_1
         ld      a,(jstate)
         cp      JUMP_1          ; is jack state >= JUMP_1
@@ -659,11 +675,21 @@ init_gaps:
 
 new_gap:
         ld      a,(gap_ctr)
-        cp      8
+        cp      6
         ret     z
         ld      hl,gaps
         addhla
         call    random
+        ld      b,a
+        ld      a,(gap_ctr)
+        cp      4
+        jr      c,new_gap_offset_right
+        ld      a,(gaps_left_offset)
+        jr      new_gap_return
+new_gap_offset_right:
+        ld      a,(gaps_left_offset)
+new_gap_return:
+        add     a,b
         ld      (hl),a
         inc8    gap_ctr
         ret
@@ -866,26 +892,6 @@ gap_and_update:
         pop     hl      ; restore pointer to gaps
         ret
 
-;==============================================================================
-;       INCLUDES
-;==============================================================================
-
-
-
-; includes platform
-        include "platform.z80"
-; include standard libraries
-        include "stdlib.z80"
-        include "stdio.z80"
-        include "tms.z80"
-        include "strings.z80"
-; include game libraries
-        include "setup.z80"
-        include "sprites.z80"
-        include "sprite_patterns.z80"
-        include "tile_patterns.z80"
-        include "menu.z80"
-
 
 
 ;==============================================================================
@@ -896,8 +902,10 @@ gap_and_update:
 str_menu_1:     db "Jumping Jack",0
 str_menu_2:     db "By Productiondave",0
 str_menu_3:     db "v1.0 - 2024",0
-str_menu_4:     db "Imagine Software",0
-str_menu_5:     db "Button to start",0
+str_menu_4:     db "Button to start",0
+str_menu_5:     db "Escape to quit",0
+
+attract_mode:   db 1    ; 0 = PLAYING, 1 = ATTRACT MODE
 
 lives:          db 5
 
@@ -909,7 +917,7 @@ j_j_fr:         db 0
 jstate:         db STILL
 jline:          db 8    ; jack starts on bottom of screen.  This is line 8.
 stun_ctr:       db 0
-gap_ctr:        db 2    ; number of gaps on the screen.  Max = 8
+gap_ctr:        db 0    ; number of gaps on the screen.  Max = 8
 
 gaps:
         db 0x00     ; right down
@@ -921,6 +929,9 @@ gaps:
         db 0x00     ; left up
         db 0x00     ; left up
         db 0x00     ; left up
+
+gaps_right_offset: db 0
+gaps_left_offset:  db 0
 
 gap_frame_data:
         db 0        ; Cell 1 (Right-moving gaps)
@@ -966,6 +977,32 @@ gap_tens:
         db 0,10,10,10, 5, 5, 5, 5,10, 5,10,10
 gap_elevens:
         db 0,11,11,10, 5, 5, 5, 9,11, 9,10,11
+
+
+;==============================================================================
+;       INCLUDES
+;==============================================================================
+
+
+
+; includes platform
+        include "platform.z80"
+; include standard libraries
+        include "stdlib.z80"
+        include "stdio.z80"
+        include "tms.z80"
+        include "strings.z80"
+; include game libraries
+        include "setup.z80"
+        include "sprites.z80"
+        include "sprite_patterns.z80"
+        include "tile_patterns.z80"
+        include "menu.z80"
+
+;==============================================================================
+;       STACK
+;==============================================================================
+
 
         ds      1024
 .stack: equ     $

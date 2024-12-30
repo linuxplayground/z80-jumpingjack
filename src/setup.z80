@@ -23,4 +23,28 @@ setup:
         ld      hl,color_table_data
         call    tms_load_color_table
 
+        ; default game start variables.
+        ld      a,1
+        ld      (attract_mode),a
+        ld      a,5
+        ld      (lives),a
+        ld      a,8
+        ld      (jline),a
+        ld      a,STILL
+        ld      (jstate),a
+
+        xor     a
+        ld      (frame),a
+        ld      (j_s_fr),a
+        ld      (j_r_fr),a
+        ld      (j_j_fr),a
+        ld      (stun_ctr),a
+        ld      (gap_ctr),a
+
+        ld      a,176
+        ld      (jack+YP),a
+        ld      a,120
+        ld      (jack+XP),a
+        ld      a,SP_STILL
+        ld      (jack+PA),a
         ret
