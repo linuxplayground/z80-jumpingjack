@@ -1,0 +1,8 @@
+* assign colours to invaders
+* explode aliens on hit
+* death explosion
+* bombs
+* loose life on bomb hit
+* restart after life lost
+* display remaining lives
+* UFO
