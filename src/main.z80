@@ -29,10 +29,12 @@ main:
         call    update_lives
         ld      b,30
         call    tms_delay
+
 ;==============================================================================
 ;       GAME LOOP
 ;==============================================================================
 game_loop:
+
         ; FRAME 1/4
         call    draw_gaps
         ;call    wait
@@ -69,7 +71,6 @@ game_loop:
         inc8    frame
         call    animate_jack
 
-
         ; MOVE GAPS
         ld      ix, gaps
         inc     (ix+0)
@@ -82,6 +83,14 @@ game_loop:
         dec     (ix+6)
         dec     (ix+7)
 
+        call    test_fall
+        or      a
+        jr      z,input         ; not falling.
+        ld      a,FALLING
+        ld      (jstate),a
+        xor     a
+        ld      (j_j_fr),a
+        jp      game_loop
 input:
         call    is_key_pressed
         jp      z,joy_input
@@ -175,6 +184,49 @@ do_crash:
         ld      (j_j_fr),a
         jp      game_loop
 
+test_fall:
+        ld      a,(jstate)
+        cp      STUN            ; okay to fall while stunned.
+        jr      z,test_fall_L1
+        cp      JUMP_1          ; can not fall if jumping or crashing.
+        jr      nc,test_fall_not_falling
+test_fall_L1:
+        ld      a,(jline)
+        cp      8
+        jr      z,test_fall_not_falling
+        ld      ix,jack
+        sla     a
+        sla     a
+        sla     a
+        sla     a
+        sla     a
+        ld      b,a
+        ld      a,(ix+XP)
+        srl     a
+        srl     a
+        srl     a
+        or      b
+        ld      e,a
+        call    test_gap
+        or      a
+        jr      nz,test_fall_falling
+        ld      a,e
+        dec     a
+        call    test_gap
+        or      a
+        jr      nz,test_fall_falling
+        ; fall through
+test_fall_not_falling:
+        xor     a
+        ret
+test_fall_falling:
+        ld      a,1
+        ret
+
+
+game_over:
+        jp      setup_game
+
 exit_game:
         call    ay_all_off
 
@@ -187,14 +239,22 @@ exit_game:
 ;       LIVES
 ;==============================================================================
 update_lives:
-        ld      de,0x0017       ; x=0, y=23
-        ld      a,(lives)
-        ld      b,a
-        ld      a,0x10          ; lives tile
+        ld      de,0x0017
+        ld      a,0x05
+        ld      b,5
 update_lives_L1:
         call    set_char_at_loc_buf
         inc     d
         djnz    update_lives_L1
+
+        ld      de,0x0017       ; x=0, y=23
+        ld      a,(lives)
+        ld      b,a
+        ld      a,0x10          ; lives tile
+update_lives_L2:
+        call    set_char_at_loc_buf
+        inc     d
+        djnz    update_lives_L2
         ret
 
 
@@ -263,6 +323,9 @@ move_jack_jump_good_3:
         ret
 
 move_jack_falling:
+        ld      a,(jack+YP)
+        add     2
+        ld      (jack+YP),a
         ret
 move_jack_crash:
         ld      a,(jack+YP)
@@ -399,15 +462,45 @@ anim_jack_jump_good_3:
         ld      (j_j_fr),a
         ld      (j_s_fr),a
         dec8    jline
+        ld      a,(jline)
+        or      a
+        jp      z,game_over
         ld      a,SP_STILL
         ld      (jack+PA),a
         xor     a
         ld      (frame),a
         ld      (j_s_fr),a
-        ret
+        jp      new_gap
 
 anim_jack_falling:
-        ret
+        ld      a,(j_j_fr)
+        rlca
+        rlca
+        add     SP_FALL
+        ld      (jack+PA),a
+        inc8    j_j_fr
+        ld      a,(j_j_fr)
+        cp      0x04            ; fall animation only lasts 4 frames. 
+        ret     c               ; animation remains static until 12 frames have passed.
+        cp      12
+        ret     nz
+        ld      a,STUN
+        ld      (jstate),a
+        ld      a,SP_STUN
+        ld      (jack+PA),a
+        xor     a
+        ld      (j_j_fr),a
+        ld      a,16
+        ld      (stun_ctr),a
+        inc8    jline
+        ld      a,(jline)
+        cp      8
+        ret     nz
+        dec8    lives
+        ld      a,(lives)
+        or      a
+        jp      z,game_over
+        jp      update_lives
 
 anim_jack_crash:
         ld      a,(frame)
@@ -562,6 +655,17 @@ init_gaps:
         ld      (gaps+5),a
         ld      (gaps+6),a
         ld      (gaps+7),a
+        ret
+
+new_gap:
+        ld      a,(gap_ctr)
+        cp      8
+        ret     z
+        ld      hl,gaps
+        addhla
+        call    random
+        ld      (hl),a
+        inc8    gap_ctr
         ret
 
 draw_gaps:
@@ -805,6 +909,8 @@ j_j_fr:         db 0
 jstate:         db STILL
 jline:          db 8    ; jack starts on bottom of screen.  This is line 8.
 stun_ctr:       db 0
+gap_ctr:        db 2    ; number of gaps on the screen.  Max = 8
+
 gaps:
         db 0x00     ; right down
         db 0x00     ; right down
