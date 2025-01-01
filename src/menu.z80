@@ -3,29 +3,34 @@
 menu:
         call    tms_clear_screen
 
-        ld      c,4
+        ld      c,1
         ld      hl,str_menu_1
         call    center_text_in_buf_row
 
-        ld      c,7
+        ld      c,4
         ld      hl,str_menu_2
         call    center_text_in_buf_row
 
-        ld      c,10
+        ld      c,7
         ld      hl,str_menu_3
         call    center_text_in_buf_row
 
-        ld      c,16
+        ld      c,10
         ld      hl,str_menu_4
         call    center_text_in_buf_row
 
-        ld      c,19
+        ld      c,13
         ld      hl,str_menu_5
         call    center_text_in_buf_row
 
+        ld      c,16
+        ld      hl, str_menu_6
+        call    center_text_in_buf_row
 
 
 .flush:
         call    tms_wait
         call    flush_sprite_attribute_data
         jp      tms_flush_buffer
+
+

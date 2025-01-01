@@ -235,13 +235,8 @@ ay_play_note_delay:
 ; CLOBBERS: 
 ;===============================================================================
 ay_play_noise_delay:
+        push    de
         push    bc
-        ld      b,AY_ENVELOPE_F
-        ld      c,e
-        call    ay_write        ; fine period
-        ld      b,AY_ENVELOPE_C
-        ld      c,d             ; course period
-        call    ay_write
 
         ay_set_mixer AY_MIX_NOISE_C
         ; fall through
@@ -250,6 +245,13 @@ ay_play_noise_delay:
         ld      c,l             ; load noise period
         call    ay_write
         ay_set_env_shape AY_ENV_SHAPE_DECAY
+        pop     de
+        ld      b,AY_ENVELOPE_F
+        ld      c,e
+        call    ay_write        ; fine period
+        ld      b,AY_ENVELOPE_C
+        ld      c,d             ; course period
+        call    ay_write
         ret
 
 ;===============================================================================

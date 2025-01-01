@@ -38,7 +38,7 @@ game_loop:
         call    draw_gaps
         ;call    wait
         call    move_jack
-        call    tms_flush_buffer
+        call    flush
         call    flush_sprite_attribute_data
         inc8    frame
         call    animate_jack
@@ -47,7 +47,7 @@ game_loop:
         call    draw_gaps
         ;call    wait
         call    move_jack
-        call    tms_flush_buffer
+        call    flush
         call    flush_sprite_attribute_data
         inc8    frame
         call    animate_jack
@@ -56,7 +56,7 @@ game_loop:
         call    draw_gaps
         ;call    wait
         call    move_jack
-        call    tms_flush_buffer
+        call    flush
         call    flush_sprite_attribute_data
         inc8    frame
         call    animate_jack
@@ -65,7 +65,7 @@ game_loop:
         call    draw_gaps
         ;call    wait
         call    move_jack
-        call    tms_flush_buffer
+        call    flush
         call    flush_sprite_attribute_data
         inc8    frame
         call    animate_jack
@@ -101,11 +101,22 @@ input:
         call    get_char
         cp      0x1b
         jp      z,exit_game
+        sub     0x30
+        ld      b,a
+        ld      a,(speed)
+        cp      b
+        jr      z,joy_input
+        ld      a,b
+        ld      (speed),a
 joy_input:
         ; if in attract mode, only test for button input
         ld      a,(attract_mode)
         or      a
         jr      z,joy_input_playing
+        ld      de,0x1310
+        ld      a,(speed)
+        add     0x30
+        call    set_char_at_loc_buf
         xor     a
         call    get_joy_status
         and     joy_map_button
@@ -246,6 +257,19 @@ test_fall_falling:
         ld      a,1
         ret
 
+
+flush:
+        ld      a,(speed)
+        ld      (tmp_speed),a
+        or      a
+        jp      z,tms_flush_buffer
+flush_L1:
+        call    tms_flush_buffer
+        dec8    tmp_speed
+        ld      a,(tmp_speed)
+        or      a
+        jr      nz,flush_L1
+        ret
 
 game_over:
         jp      setup_game
@@ -674,7 +698,7 @@ sfx_fall:
         ret
 
 sfx_crash:
-        ld      l,0x0
+        ld      l,0x00
         ld      h,0
         ld      b,2             ; Channel c
         ld      de,0x1000
@@ -1017,6 +1041,7 @@ str_menu_2:     db "By Productiondave",0
 str_menu_3:     db "v1.0 - 2024",0
 str_menu_4:     db "Button to start",0
 str_menu_5:     db "Escape to quit",0
+str_menu_6:     db "Speed: ",0
 
 sfx_run_beat_ctr: db 0
 sfx_jump_beat_ctr: db 0
@@ -1029,7 +1054,8 @@ sfx_fall_notes:  db 64, 48, 32
 sfx_stun_notes:  db 64, 58, 52, 46, 64, 58, 52, 46, 64, 58, 52, 46
 
 attract_mode:   db 1    ; 0 = PLAYING, 1 = ATTRACT MODE
-
+speed:          db 0    ; speed set by pressing 0,1,2 in menu
+tmp_speed:      db 0
 lives:          db 5
 
 frame:          db 0
