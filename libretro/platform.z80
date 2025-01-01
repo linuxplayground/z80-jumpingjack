@@ -88,3 +88,5 @@ ay_set_noise_volume:
         ret
 ay_play_note_delay:
         ret
+ay_play_noise_delay:
+        ret

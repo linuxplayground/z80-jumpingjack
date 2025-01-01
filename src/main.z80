@@ -17,6 +17,7 @@ STUN:           equ 9
         ld      sp,.stack
 
         call    init
+        ;call    ay_all_off
 setup_game:
         call    setup
 main:
@@ -191,13 +192,17 @@ do_jump_L1:
         ld      (jstate),a
         xor     a
         ld      (j_j_fr),a
+        ld      (sfx_jump_beat_ctr),a
         jp      game_loop
 
 do_crash:
+        ld      c,tms_dark_red
+        call    tms_set_backdrop_color
         ld      a,CRASH
         ld      (jstate),a
         xor     a
         ld      (j_j_fr),a
+        call    sfx_crash
         jp      game_loop
 
 test_fall:
@@ -236,6 +241,8 @@ test_fall_not_falling:
         xor     a
         ret
 test_fall_falling:
+        xor     a
+        ld      (sfx_jump_beat_ctr),a
         ld      a,1
         ret
 
@@ -404,7 +411,7 @@ anim_jack_still:
         ld      (j_s_fr),a
         xor     a
         ld      (frame),a
-        ret
+        jp      sfx_still
 
 anim_jack_left:
         ld      a,(frame)
@@ -419,9 +426,7 @@ anim_jack_left:
         ld      a,(j_r_fr)
         and     0x03
         ld      (j_r_fr),a
-        ret
-
-        ret
+        jp      sfx_run
 
 anim_jack_right:
         ld      a,(frame)
@@ -436,9 +441,7 @@ anim_jack_right:
         ld      a,(j_r_fr)
         and     0x03
         ld      (j_r_fr),a
-        ret
-
-        ret
+        jp      sfx_run
 
 anim_jack_jump_good_1:
         ld      a,(j_j_fr)
@@ -450,6 +453,7 @@ anim_jack_jump_good_1:
         ld      a,(j_j_fr)
         cp      0x04            ; are we ready to switch to good_jump_2?
         ret     nz
+        call    sfx_jump
         ld      a,JUMP_2
         ld      (jstate),a
         xor     a
@@ -461,6 +465,7 @@ anim_jack_jump_good_2:
         ld      a,(j_j_fr)
         cp      0x04            ; are we ready to switch to good_jump_2?
         ret     nz
+        call    sfx_jump
         ld      a,JUMP_3
         ld      (jstate),a
         xor     a
@@ -472,6 +477,7 @@ anim_jack_jump_good_3:
         ld      a,(j_j_fr)
         cp      0x04            ; are we ready to switch to good_jump_2?
         ret     nz
+        call    sfx_jump
         ld      a,STILL
         ld      (jstate),a
         xor     a
@@ -486,9 +492,12 @@ anim_jack_jump_good_3:
         xor     a
         ld      (frame),a
         ld      (j_s_fr),a
+        xor     a
+        ld      (sfx_jump_beat_ctr),a
         jp      new_gap
 
 anim_jack_falling:
+        call    sfx_fall
         ld      a,(j_j_fr)
         rlca
         rlca
@@ -508,6 +517,9 @@ anim_jack_falling:
         ld      (j_j_fr),a
         ld      a,16
         ld      (stun_ctr),a
+        xor     a
+        ld      (sfx_jump_beat_ctr),a
+        ld      (sfx_stun_beat_ctr),a
         inc8    jline
         ld      a,(jline)
         cp      8
@@ -529,7 +541,7 @@ anim_jack_crash:
         ld      (jack+PA),a
         inc8    j_j_fr
         ld      a,(j_j_fr)
-        cp      0x04            ; are we ready to switch to good_jump_2?
+        cp      0x04            ; are we ready to switch to crash_fall
         ret     nz
         ld      a,CRASH_FALL
         ld      (jstate),a
@@ -537,7 +549,9 @@ anim_jack_crash:
         ld      (jack+PA),a
         xor     a
         ld      (j_j_fr),a
-        ret
+        ld      (sfx_stun_beat_ctr),a
+        ld      c,tms_dark_yellow
+        jp      tms_set_backdrop_color
 
 anim_jack_crash_fall:
         ld      a,(frame)
@@ -570,6 +584,8 @@ anim_jack_stun:
         rlca
         add     SP_STUN
         ld      (jack+PA),a
+        ld      a,(frame)
+        call    sfx_stun
         dec8    stun_ctr
         ld      a,(stun_ctr)
         or      a
@@ -583,6 +599,103 @@ anim_jack_stun:
         ld      (j_s_fr),a
         ret
 
+;==============================================================================
+;       SOUND EFFECTS
+;==============================================================================
+
+
+sfx_still:
+        ld      a,(attract_mode)
+        or      a
+        ret     nz
+        ld      a,(j_s_fr)
+        and     0x01
+        ld      hl,sfx_still_notes
+        addhla
+        ld      a,(hl)
+        ld      l,a
+        ld      h,0
+        ld      de,0x0450
+        ld      b,0             ; Channel a
+        jp      ay_play_note_delay
+
+sfx_run:
+        ld      a,(j_r_fr)
+        and     0x7
+        ret     nz
+        ld      a,(sfx_run_beat_ctr)
+        ld      hl,sfx_run_notes
+        addhla
+        ld      a,(hl)
+        ld      l,a
+        ld      h,0
+        ld      b,0             ; Channel a
+        ld      de,0x0450
+        call    ay_play_note_delay
+        inc8    sfx_run_beat_ctr
+        ld      a,(sfx_run_beat_ctr)
+        and     0x01
+        ld      (sfx_run_beat_ctr),a
+        ret
+
+sfx_jump:
+        ld      a,(sfx_jump_beat_ctr)
+        ld      hl,sfx_jump_notes
+        addhla
+        ld      a,(hl)
+        ld      l,a
+        ld      h,0
+        ld      b,0             ; Channel a
+        ld      de,0x0450
+        call    ay_play_note_delay
+        inc8    sfx_jump_beat_ctr
+        ld      a,(sfx_jump_beat_ctr)
+        and     0x03
+        ld      (sfx_jump_beat_ctr),a
+        ret
+
+sfx_fall:
+        ld      a,(j_j_fr)
+        and     0x03
+        ret     nz
+        ld      a,(sfx_jump_beat_ctr)
+        ld      hl,sfx_fall_notes
+        addhla
+        ld      a,(hl)
+        ld      l,a
+        ld      h,0
+        ld      b,0             ; Channel a
+        ld      de,0x0450
+        call    ay_play_note_delay
+        inc8    sfx_jump_beat_ctr
+        ld      a,(sfx_jump_beat_ctr)
+        and     0x03
+        ld      (sfx_jump_beat_ctr),a
+        ret
+
+sfx_crash:
+        ld      l,0x0
+        ld      h,0
+        ld      b,2             ; Channel c
+        ld      de,0x1000
+        call    ay_play_noise_delay
+        ret
+
+sfx_stun:
+        ld      a,(stun_ctr)
+        and     0x03
+        ret     nz
+        ld      a,(sfx_stun_beat_ctr)
+        ld      hl,sfx_stun_notes
+        addhla
+        ld      a,(hl)
+        ld      l,a
+        ld      h,0
+        ld      b,2             ; Channel a
+        ld      de,0x0450
+        call    ay_play_note_delay
+        inc8    sfx_stun_beat_ctr
+        ret
 
 ;==============================================================================
 ;       GAPS AND LINES
@@ -675,7 +788,7 @@ init_gaps:
 
 new_gap:
         ld      a,(gap_ctr)
-        cp      6
+        cp      7
         ret     z
         ld      hl,gaps
         addhla
@@ -904,6 +1017,16 @@ str_menu_2:     db "By Productiondave",0
 str_menu_3:     db "v1.0 - 2024",0
 str_menu_4:     db "Button to start",0
 str_menu_5:     db "Escape to quit",0
+
+sfx_run_beat_ctr: db 0
+sfx_jump_beat_ctr: db 0
+sfx_stun_beat_ctr: db 0
+
+sfx_still_notes: db 41, 44
+sfx_run_notes:   db 57, 59
+sfx_jump_notes:  db 32, 48, 64
+sfx_fall_notes:  db 64, 48, 32
+sfx_stun_notes:  db 64, 58, 52, 46, 64, 58, 52, 46, 64, 58, 52, 46
 
 attract_mode:   db 1    ; 0 = PLAYING, 1 = ATTRACT MODE
 

@@ -1,5 +1,5 @@
         include 'nabu_macros.z80'
-
+        
 ;===============================================================================
 ; VARIABLES
 ;===============================================================================
@@ -62,80 +62,80 @@ wait_for_key:
 ; CLOBBERS: none
 ;===============================================================================
 isrKeyboard:
-        push	bc
-        push	de
-        push	hl
-        push	af
-        push	iy
+        push    bc
+        push    de
+        push    hl
+        push    af
+        push    iy
 
-        ld	iy,0
-        in	a,(io_keyboard)
-        ld	c,a
-        sub	a,0x80
-        jr	c,isrKeyboard_1
-        ld	a,0x83
-        sub	a,c
-        jr	c,isrKeyboard_1
-        ld	iy,last_key_int_val
-        ld	(iy+0),c
-        jr	isrKeyboard_exit
+        ld      iy,0
+        in      a,(io_keyboard)
+        ld      c,a
+        sub     a,0x80
+        jr      c,isrKeyboard_1
+        ld      a,0x83
+        sub     a,c
+        jr      c,isrKeyboard_1
+        ld      iy,last_key_int_val
+        ld      (iy+0),c
+        jr      isrKeyboard_exit
 isrKeyboard_1:
-        ld	a,c
-        sub	0x90
-        jr	c,isrKeyboard_2
-        ld	a,0x95
-        sub	a,c
-        jr	nc,isrKeyboard_exit
+        ld      a,c
+        sub     0x90
+        jr      c,isrKeyboard_2
+        ld      a,0x95
+        sub     a,c
+        jr      nc,isrKeyboard_exit
 isrKeyboard_2:
-        ld	a,(last_key_int_val+0)
-        cp	0x80
-        jr	z,isrKeyboard_3
-        cp	0x81
-        jr	z,isrKeyboard_4
-        cp	0x82
-        jr	z,isrKeyboard_5
-        cp	0x83
-        jr	z,isrKeyboard_6
-        jr	isrKeyboard_7
+        ld      a,(last_key_int_val+0)
+        cp      0x80
+        jr      z,isrKeyboard_3
+        cp      0x81
+        jr      z,isrKeyboard_4
+        cp      0x82
+        jr      z,isrKeyboard_5
+        cp      0x83
+        jr      z,isrKeyboard_6
+        jr      isrKeyboard_7
 isrKeyboard_3:
-        ld	iy,last_key_int_val
-        ld	(iy+0),0x00
-        ld	hl,joy_status
-        ld	(hl),c
-        jr	isrKeyboard_exit
+        ld      iy,last_key_int_val
+        ld      (iy+0),0x00
+        ld      hl,joy_status
+        ld      (hl),c
+        jr      isrKeyboard_exit
 isrKeyboard_4:
-        ld	iy,last_key_int_val
-        ld	(iy+0),0x00
-        ld	hl,joy_status+1
-        ld	(hl),c
-        jr	isrKeyboard_exit
+        ld      iy,last_key_int_val
+        ld      (iy+0),0x00
+        ld      hl,joy_status+1
+        ld      (hl),c
+        jr      isrKeyboard_exit
 isrKeyboard_5:
-        ld	iy,last_key_int_val
-        ld	(iy+0),0x00
-        ld	hl,joy_status+2
-        ld	(hl),c
-        jr	isrKeyboard_exit
+        ld      iy,last_key_int_val
+        ld      (iy+0),0x00
+        ld      hl,joy_status+2
+        ld      (hl),c
+        jr      isrKeyboard_exit
 isrKeyboard_6:
-        ld	iy,last_key_int_val
-        ld	(iy+0),0x00
-        ld	hl,joy_status+3
-        ld	(hl),c
-        jr	isrKeyboard_exit
-isrKeyboard_7:					; not a joystick. Add key press to buffer
-        ld	hl,kbd_buffer+0			; increment buffer write position.
-        ld	de,(kbd_buffer_write_pos)
-        ld	d,0
-        add	hl,de
-        ld	(hl),c
-        ld	a,(kbd_buffer_write_pos)
-        inc	a
-        ld	(kbd_buffer_write_pos),a
+        ld      iy,last_key_int_val
+        ld      (iy+0),0x00
+        ld      hl,joy_status+3
+        ld      (hl),c
+        jr      isrKeyboard_exit
+isrKeyboard_7:                                  ; not a joystick. Add key press to buffer
+        ld      hl,kbd_buffer+0                 ; increment buffer write position.
+        ld      de,(kbd_buffer_write_pos)
+        ld      d,0
+        add     hl,de
+        ld      (hl),c
+        ld      a,(kbd_buffer_write_pos)
+        inc     a
+        ld      (kbd_buffer_write_pos),a
 isrKeyboard_exit:
-        pop	iy
-        pop	af
-        pop	hl
-        pop	de
-        pop	bc
+        pop     iy
+        pop     af
+        pop     hl
+        pop     de
+        pop     bc
         ei
         reti
 
@@ -193,43 +193,14 @@ ay_all_off:
 ;        DE = Delay
 ;        HL = Note to play is an index into the ay_notes data table
 ; OUTPUT: void
-; CLOBBERS:
+; CLOBBERS: 
 ;===============================================================================
 ay_play_note_delay:
-        push    hl
-        push    bc              ; the macros nuke BC
-        ld      b,AY_ENVELOPE_F
-        ld      c,e
-        call    ay_write        ; fine period
-        ld      b,AY_ENVELOPE_C
-        ld      c,d             ; course period
-        call    ay_write
-
-        pop     bc
+        push    de
         push    bc
-
-        ld      a,b
-        cp      0
-        jr      nz,.not_a
-        ; is a
-        ay_set_mixer AY_MIX_TONE_A
-        ay_set_volume AY_VOLUME_A 0 1
-        jp      .play_note
-.not_a:
-        cp      1
-        jr      nz,.not_b
-        ; is b
-        ay_set_mixer AY_MIX_TONE_B
-        ay_set_volume AY_VOLUME_B 0 1
-        jp      .play_note
-.not_b:
-        ; is c or something else.
-        ay_set_mixer AY_MIX_TONE_C
-        ay_set_volume AY_VOLUME_C 0 1
-        ; fall through
-.play_note:
+        ay_set_mixer AY_MIX_TONE_A&AY_MIX_TONE_B&AY_MIX_TONE_C
         pop     bc
-        pop     hl
+.play_note:
         ld      a,b
         add     a,a             ; register pair - so need to double it. 0, 2, 4
         ld      b,a
@@ -237,13 +208,46 @@ ay_play_note_delay:
         add     hl,hl           ; double HL because of length of each array
         add     hl,de           ; get pointer into ay_notes
         inc     hl              ; increment the pointer into fine value
-        ld      c,(hl)          ; load fine value
-                                ; b is already at fine register
+        ld      c,(hl)          ; load fine value 
+
         call    ay_write
 
         dec     hl              ; increment pointer for course value
         ld      c,(hl)          ; get cource value
         inc     b               ; select course register
+        call    ay_write
+        pop     de
+        ld      b,AY_ENVELOPE_F
+        ld      c,e
+        call    ay_write        ; fine period
+        ld      b,AY_ENVELOPE_C
+        ld      c,d             ; course period
+        call    ay_write
+        ay_set_env_shape AY_ENV_SHAPE_DECAY
+        ret
+
+;===============================================================================
+; Play noise
+; INPUT: B  = Channel to play on 0 = A, 1 = B, 2 = C
+;        DE = Delay
+;        HL = Noise period to play is an index into the ay_notes data table
+; OUTPUT: void
+; CLOBBERS: 
+;===============================================================================
+ay_play_noise_delay:
+        push    bc
+        ld      b,AY_ENVELOPE_F
+        ld      c,e
+        call    ay_write        ; fine period
+        ld      b,AY_ENVELOPE_C
+        ld      c,d             ; course period
+        call    ay_write
+
+        ay_set_mixer AY_MIX_NOISE_C
+        ; fall through
+.play_noise:
+        pop     bc
+        ld      c,l             ; load noise period
         call    ay_write
         ay_set_env_shape AY_ENV_SHAPE_DECAY
         ret
@@ -278,6 +282,11 @@ init:
         ld      c,a
         ld      b,IO_PORTA
         call    ay_write
+        ay_set_mixer AY_MIX_ALL_OFF&AY_MIX_TONE_A&AY_MIX_TONE_B&AY_MIX_TONE_C
+        ay_set_volume AY_VOLUME_A 0 1
+        ay_set_volume AY_VOLUME_B 0 1
+        ay_set_volume AY_VOLUME_C 0 1
+        ay_set_env_shape AY_ENV_SHAPE_DECAY
         ei      ; enable interrupts
         ret
 
@@ -288,16 +297,16 @@ init:
 ; CLOBBERS: HL
 ;===============================================================================
 is_key_pressed:
-        ld	a,(kbd_buffer_write_pos)
-        ld	hl,kbd_buffer_read_pos
-        sub	a,(hl)
-        jr	nz,is_key_pressed_1
-        jr	is_key_pressed_2
-is_key_pressed_1:				; a key was pressed - return 1 in A
-        ld	a,1
+        ld      a,(kbd_buffer_write_pos)
+        ld      hl,kbd_buffer_read_pos
+        sub     a,(hl)
+        jr      nz,is_key_pressed_1
+        jr      is_key_pressed_2
+is_key_pressed_1:                               ; a key was pressed - return 1 in A
+        ld      a,1
         ret
-is_key_pressed_2:				; no key was pressed - return 0 in A
-        ld	a,0
+is_key_pressed_2:                               ; no key was pressed - return 0 in A
+        ld      a,0
         ret
 
 ;===============================================================================
@@ -307,19 +316,19 @@ is_key_pressed_2:				; no key was pressed - return 0 in A
 ; CLOBBERS: IY, BC
 ;===============================================================================
 get_char:
-        ld	a,(kbd_buffer_write_pos)
-        ld	iy,kbd_buffer_read_pos
-        sub	a,(iy+0)
-        jr	z,get_char		; back to get_char
-        ld	bc,kbd_buffer
-        ld	hl,(kbd_buffer_read_pos)
-        ld	h,0x00
-        add	hl,bc
-        ld	c,(hl)			; c contains ascii value
-        ld	a,(kbd_buffer_read_pos)
-        inc	a			; increment and store buffer read pos
-        ld	(kbd_buffer_read_pos),a
-        ld	a,c			; copy c to a
+        ld      a,(kbd_buffer_write_pos)
+        ld      iy,kbd_buffer_read_pos
+        sub     a,(iy+0)
+        jr      z,get_char              ; back to get_char
+        ld      bc,kbd_buffer
+        ld      hl,(kbd_buffer_read_pos)
+        ld      h,0x00
+        add     hl,bc
+        ld      c,(hl)                  ; c contains ascii value
+        ld      a,(kbd_buffer_read_pos)
+        inc     a                       ; increment and store buffer read pos
+        ld      (kbd_buffer_read_pos),a
+        ld      a,c                     ; copy c to a
         ret
 
 ;===============================================================================
