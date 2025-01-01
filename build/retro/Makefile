@@ -1,7 +1,7 @@
 
 TOP=../..
 # case here has to match the directory name
-PROGS=jumpingjack.com
+PROGS=jjack.com
 
 include Make.rules
 
