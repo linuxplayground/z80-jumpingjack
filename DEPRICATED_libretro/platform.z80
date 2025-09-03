@@ -13,7 +13,7 @@ joy_map_down:           equ %01000000
 joy_map_button:         equ %00000001
 
 joy_status:             ds 2
-
+kbuf:                   ds 1
 ;===============================================================================
 ; Check if a key was pressed
 ; INPUT: void
@@ -21,8 +21,13 @@ joy_status:             ds 2
 ; CLOBBERS: IY
 ;===============================================================================
 is_key_pressed:
-        in      a,(0x32)        ; read sio control status byte
-        and     1               ; check the rcvr ready bit
+;        in      a,(0x32)        ; read sio control status byte
+;        and     1               ; check the rcvr ready bit
+        call    getk
+        ld      (kbuf),a
+        or      a
+        ret     z
+        ld      a,1
         ret
 
 ;===============================================================================
@@ -32,7 +37,8 @@ is_key_pressed:
 ; CLOBBERS: IY, BC
 ;===============================================================================
 get_char:
-        in    a,(0x30)          ; read sio control data byte
+;        in    a,(0x30)          ; read sio control data byte
+        ld    a,(kbuf)
         ret
 
 ;===============================================================================

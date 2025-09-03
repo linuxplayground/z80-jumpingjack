@@ -9,3 +9,7 @@ LEFT - RIGHT - BUTTON to JUMP.
 Jump through the gaps until you reach the top.
 
 Fall all the way to the bottom and you loose a life.
+
+## Building
+
+Just build for the nabu.  For z80-retro, use the version from z180-nouveau project.

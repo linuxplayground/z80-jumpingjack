@@ -1,8 +1,7 @@
 TOP=..
 
 SUBDIRS=\
-	nabu \
-	retro
+	nabu
 
 all:: 
 
