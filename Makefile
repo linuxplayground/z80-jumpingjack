@@ -1,8 +1,7 @@
 TOP=.
 
 SUBDIRS=\
-	build/nabu \
-	build/retro
+	build/nabu
 
 all::
 
