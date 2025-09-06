@@ -43,6 +43,19 @@ IO_PORTB:               equ 0x0f
 INT_MASK_KEYBOARD:      equ 0x20
 INT_MASK_VDP:           equ 0x10
 
+
+;===============================================================================
+; CP/M Get Key press
+; INPUT: void
+; OUTPUT: ascii of pressed key in A
+; CLOBBERS: BC, DE
+;===============================================================================
+getk:
+        call    is_key_pressed
+        or      a
+        ret     z
+        jp      get_char
+
 ;===============================================================================
 ; Blocking wait for keypress
 ; INPUT: void

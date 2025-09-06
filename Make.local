@@ -6,6 +6,7 @@ STOREDIR = "/mnt/c/dev/nabu/Nabu Internet Adapter/Store/"
 ISHKURDIR = "/override/this/in/Make.local"
 
 MKDIR = mkdir -pv
+Z88DK = $(TOP)/../z88dk
 
 # G Drive is Slot 6.
 DISK_SLOT = 6

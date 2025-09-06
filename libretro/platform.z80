@@ -13,7 +13,19 @@ joy_map_down:           equ %01000000
 joy_map_button:         equ %00000001
 
 joy_status:             ds 2
-kbuf:                   ds 1
+
+;===============================================================================
+; CP/M Get Key press
+; INPUT: void
+; OUTPUT: ascii of pressed key in A
+; CLOBBERS: BC, DE
+;===============================================================================
+getk:
+        ld      c,bdos_conio
+        ld      e,0xff
+        call    bdos_call
+        ret
+
 ;===============================================================================
 ; Check if a key was pressed
 ; INPUT: void
@@ -21,13 +33,8 @@ kbuf:                   ds 1
 ; CLOBBERS: IY
 ;===============================================================================
 is_key_pressed:
-;        in      a,(0x32)        ; read sio control status byte
-;        and     1               ; check the rcvr ready bit
-        call    getk
-        ld      (kbuf),a
-        or      a
-        ret     z
-        ld      a,1
+        in      a,(0x32)        ; read sio control status byte
+        and     1               ; check the rcvr ready bit
         ret
 
 ;===============================================================================
@@ -37,8 +44,7 @@ is_key_pressed:
 ; CLOBBERS: IY, BC
 ;===============================================================================
 get_char:
-;        in    a,(0x30)          ; read sio control data byte
-        ld    a,(kbuf)
+        in    a,(0x30)          ; read sio control data byte
         ret
 
 ;===============================================================================
@@ -96,3 +102,4 @@ ay_play_note_delay:
         ret
 ay_play_noise_delay:
         ret
+

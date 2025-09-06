@@ -19,17 +19,6 @@ fcount:                 db 0x80         ; number of bytes to read or write
 frec:                   ds 0x80         ; 128 byte internal buffer for file io
 
 ;===============================================================================
-; CP/M Get Key press
-; INPUT: void
-; OUTPUT: ascii of pressed key in A
-; CLOBBERS: BC, DE
-;===============================================================================
-getk:
-        ld      c,bdos_conio
-        ld      e,0xff
-        call    bdos_call
-        ret
-;===============================================================================
 ; CP/M Write char
 ; INPUT: ascii value to write in A
 ; OUTPUT: void
